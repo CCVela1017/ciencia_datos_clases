@@ -1,0 +1,129 @@
+---
+title: "Analisis exploratorio de datos"
+author: "Carlos Vela"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-tools: true
+    code-fold: true
+    theme: cosmo
+    highlight-style: tango
+  pdf: 
+    toc: true
+    number-sections: true
+editor: visual
+execute: 
+  eval: true
+  warning: false
+  message: false
+  cache: true
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+# Cargar de paquetes
+library(tidyverse)
+library(ggplot2)
+library(naniar)
+library(mice)
+library(corrplot)
+library(here)
+
+# Configuraciones
+options(scipen = 999)
+theme_set(theme_minimal())
+```
+
+## Analisis Exploratorio inicial
+
+```{r}
+# Cargar datos
+datos_raw <- readRDS(here("data/datos_raw.rds"))
+datos_median <- readRDS(here("data/datos_median.rds"))
+datos_regresion <- readRDS(here("data/datos_regresion.rds"))
+datos_mice <- readRDS(here("data/datos_m.rds"))
+
+```
+
+```{r}
+#| label: exploracion_inicial
+#| fig.cap: "Proporcion de valores faltantes por variable"
+#| fig.width: 10
+#| fig.heitht: 6
+
+# Resumen de datos
+summary(datos_raw)
+
+# Visualizacion de faltantes
+mostrar_grafico(
+  gg_miss_var(datos_raw) +
+    labs(title = "Valores faltantes por variable") +
+    theme_minimal()
+)
+
+```
+
+## Imputación de datos
+
+### Comparación de métodos
+
+```{r}
+#| label: comparacion-imputacion
+#| fig.width: 12
+#| fig.height: 8
+
+# Compatat distribuciones
+par(mfrow = c(2, 2))
+hist(datos_raw$edad, main = "Original", col = "lightblue")
+hist(datos_median$edad, main = "Mediana", col = "lightgreen")
+hist(datos_regresion$edad, main = "Regresion", col = "lightyellow")
+hist(datos_mice$edad, main = "MICE", col = "lightpink")
+```
+
+## Detección y tratamiento de outliers
+
+```{r}
+
+#| label: outliers
+#| fig.cap: "Boxplor antes y despues de winsorizacion"
+#| fig.width: 10
+#| fig.height: 6
+
+# Boxplot comparativo
+boxplot(datos_mice$ingreso, datos_winsor$ingreso,
+        names = c("Original", "Winsorizado"),
+        main = "Comparaci+on de Ingreso",
+        col = c("lightblue", "lightgreen"))
+
+```
+
+## Conclusiones
+
+```{r}
+#| label: conclusiones
+#| echo: false
+
+# Resumen final
+cat("=== CONCLUSIONES DEL ANÁLISIS ===\n\n")
+cat("1. Datos faltantes:\n")
+cat("     - Edad: MCAR (", sum(is.na(datos_raw$edad)), " valores)\n")
+cat("     - Satisfaccion: MAR (", sum(is.na(datos_raw$satisfaccion)), " valores)\n\n")
+
+cat("2. Metodos de Imputacion evaluados:\n")
+cat("     - Mediana: Simple pero puede sesgar la distribucion\n")
+cat("     - Regresion: Considera relaciones entre variables\n")
+cat("     - MICE/KNN: Capturan patrones complejos en los datos\n\n")
+
+cat("3. Outliers detectados:\n")
+cat("     - Ingreso: 20 valores extremos identificados\n")
+cat("     - Tratamiento aplicado: Winsorizacion al 5% y 95%\n\n")
+
+cat("4. Recomendaciones:\n")
+cat("     - Para datos MCAR: Cualquier metodo es valido\n")
+cat("     - Para datos MAR: Usar metodos avanzados como MICE\n")
+cat("     - Para outliers: Winsorizacion o transformacion logaritmica\n\n")
+
+```

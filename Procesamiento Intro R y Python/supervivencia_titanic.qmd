@@ -1,0 +1,61 @@
+---
+title: "Analisis de supervivencia del Titanic"
+author: "CarlosVela"
+format: 
+  html:
+    code-fold: true
+    toc: true
+editor: visual
+jupyter: python3
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{python}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{python}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+## Carga de datos
+
+Primero cargamos el dataset "**Titanic**"
+
+```{python}
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+
+titanic = sns.load_dataset('titanic')
+titanic['Survived_label'] = titanic['survived'].map({0: 'No sobrevivio', 1: 'Sobrevivio'})
+titanic.head()
+```
+
+## Visualizaciones Estadisticas y Dinamicas
+
+### Graficos con Seaborn
+
+```{python}
+#| echo: true
+#| 
+
+plt.figure(figsize=(8, 5))
+sns.boxplot(x='survived', y='age', data=titanic, palette='Set2')
+plt.title('Distribución de Edad por Supervivencia')
+plt.show()
+```
