@@ -1,0 +1,760 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Analisis de ventas globales de videojuegos (vgsales)\"\n",
+        "subtitle: \"Analisis descriptivo, diagnostico e interpretacion administrativa\"\n",
+        "lang: es\n",
+        "format: pdf\n",
+        "jupyter: python3\n",
+        "execute:\n",
+        "  warning: false\n",
+        "  echo: true\n",
+        "editor: \n",
+        "  markdown: \n",
+        "    wrap: sentence\n",
+        "---"
+      ],
+      "id": "a0e8ec59"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import warnings\n",
+        "warnings.filterwarnings(\"ignore\")"
+      ],
+      "id": "048795a8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Parte A: Carga y exploración inicial\n",
+        "\n",
+        "## Tarea A.1: Importar paquetes y cargar el dataset"
+      ],
+      "id": "8bcd3fb2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import matplotlib.pyplot as plt\n",
+        "import seaborn as sns\n",
+        "\n",
+        "pd.set_option(\"display.float_format\", lambda x: f\"{x:,.2f}\")\n",
+        "pd.set_option(\"display.width\", 160)\n",
+        "sns.set_theme(style=\"whitegrid\", palette=\"deep\")\n",
+        "\n",
+        "df = pd.read_csv(\"vgsales.csv\")\n",
+        "df_raw = df.copy()\n",
+        "df.shape"
+      ],
+      "id": "99f7eafc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea A.2: Preguntas de exploración inicial"
+      ],
+      "id": "f283f738"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "print(\"Filas y columnas:\", df.shape)\n",
+        "print()\n",
+        "print(df.dtypes)\n",
+        "print()\n",
+        "nulos = df.isna().sum()\n",
+        "print(\"Valores nulos por columna:\")\n",
+        "print(nulos[nulos > 0])"
+      ],
+      "id": "788f745e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**¿Cuántas filas y columnas tiene el dataset?** El dataset tiene 16598 filas y 11 columnas.\n",
+        "\n",
+        "**¿Qué tipo de datos tiene cada columna?**\n",
+        "\n",
+        "`Rank` (int64) Posición del juego según ventas globales.\n",
+        "`Name` (str) Nombre del videojuego.\n",
+        "`Platform` (str) Plataforma o consola en la que se lanzó.\n",
+        "`Year` (float64) Año de lanzamiento.\n",
+        "`Genre` (str) Género del juego `Publisher` (str) Empresa que publicó el juego.\n",
+        "`NA_Sales` (float64) Ventas en Norteamérica, en millones de unidades.\n",
+        "`EU_Sales` (float64) Ventas en Europa, en millones de unidades.\n",
+        "`JP_Sales` (float64) Ventas en Japón, en millones de unidades.\n",
+        "`Other_Sales` (float64) Ventas en el resto del mundo, en millones de unidades.\n",
+        "`Global_Sales` (float64) Ventas globales totales, en millones de unidades.\n",
+        "\n",
+        "**¿Hay valores nulos? ¿En qué columnas?** Sí.\n",
+        "Hay 271 nulos en Year y 58 nulos en Publisher.\n",
+        "\n",
+        "## Tarea A.3: Primeras 10 filas y estadísticas descriptivas"
+      ],
+      "id": "8cef834e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "df.head(10)"
+      ],
+      "id": "b4642792",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "df.describe().T"
+      ],
+      "id": "7128e474",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "df.describe(include=\"object\").T"
+      ],
+      "id": "55c126d1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Parte B: Limpieza de datos\n",
+        "\n",
+        "## Tarea B.1: Transformaciones"
+      ],
+      "id": "7a07c23a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "filas_inicial = len(df)\n",
+        "\n",
+        "# eliminar filas nulas en year\n",
+        "df = df.dropna(subset=[\"Year\"])\n",
+        "print(f\"1. Filas tras eliminar Year nulo: {len(df):,} (se eliminaron {filas_inicial - len(df)})\")\n",
+        "\n",
+        "# cambiar nulos por unknown en Publisher\n",
+        "nulos_pub = df[\"Publisher\"].isna().sum()\n",
+        "df[\"Publisher\"] = df[\"Publisher\"].fillna(\"Unknown\")\n",
+        "print(f\"2. Publisher nulos reemplazados por 'Unknown': {nulos_pub}\")\n",
+        "\n",
+        "# Convertir el año en entero\n",
+        "df[\"Year\"] = df[\"Year\"].astype(int)\n",
+        "print(f\"3. Tipo de Year ahora: {df['Year'].dtype}\")\n",
+        "\n",
+        "# Eliminar datos duplicados\n",
+        "filas_antes = len(df)\n",
+        "df = df.drop_duplicates()\n",
+        "print(f\"4. Duplicados eliminados: {filas_antes - len(df)}\")\n",
+        "\n",
+        "# verificar nulos resntantes\n",
+        "print(\"5. Nulos restantes por columna:\")\n",
+        "print(df.isna().sum())\n",
+        "assert df.isna().sum().sum() == 0\n",
+        "print(f\"\\nDataset limpio: {df.shape[0]:,} filas x {df.shape[1]} columnas\")"
+      ],
+      "id": "eb086545",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea B.2: Explicacion limpieza\n",
+        "\n",
+        "**¿Por qué es importante limpiar los datos antes de analizarlos?** Porque los resultados del análisis deben ser confiables.\n",
+        "Los nulos, tipos incorrectos o duplicados pueden provocar errores en el analisis, como promedios sesgados, filas ignoradas sin aviso, conteos inflados o gráficos que no se pueden construir.\n",
+        "\n",
+        "**¿Qué decisiones tomó sobre los valores nulos y por qué?** En `Year` se eliminaron las filas, porque el año es esencial para el análisis temporal y no es pósible imputarlo sin inventar información.\n",
+        "En `Publisher` se etiquetó como \"Unknown\", porque la fila sigue siendo valiosa para otros análisis.\n",
+        "\n",
+        "**¿Qué impacto podría tener no limpiar los datos en las conclusiones del análisis?** Sin conversión de `Year`, los gráficos de tendrían ejes decimales o fallarían.\n",
+        "Con nulos en `Publisher`, los juegos sin publisher desaparecerían de agrupaciones y el ranking de publishers subestimaría el mercado.\n",
+        "Los duplicados inflarían ventas de ciertos géneros o plataformas y distorsionarían los rankings.\n",
+        "\n",
+        "**Pregunta de reflexión: si el dataset fueran las ventas reales de una empresa, ¿qué riesgos administrativos tendría decidir con datos sin limpiar?** Los riesgos principales serían: asignar mal el presupuesto, reportar cifras incorrectas a directivos, perder credibilidad interna, pronósticos de demanda erróneos, decisiones difíciles de auditar o revertir.\n",
+        "\n",
+        "# Parte C: Análisis descriptivo\n",
+        "\n",
+        "## Tarea C.1: Ventas globales por género"
+      ],
+      "id": "17f91cc4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "#| label: c1-genero\n",
+        "ventas_genero = (df.groupby(\"Genre\")[\"Global_Sales\"]\n",
+        "                   .sum()\n",
+        "                   .sort_values(ascending=False))\n",
+        "ventas_genero.to_frame(\"Ventas globales (M)\")"
+      ],
+      "id": "c1-genero",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea C.2: Tendencia anual de ventas globales"
+      ],
+      "id": "07605e8d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "ventas_anio = df.groupby(\"Year\")[\"Global_Sales\"].sum()\n",
+        "ventas_anio.to_frame(\"Ventas globales (M)\").T"
+      ],
+      "id": "b646c6f7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "print(\"Año pico:\", ventas_anio.idxmax(), \"con\", round(ventas_anio.max(), 1), \"millones\")"
+      ],
+      "id": "ac549e0b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea C.3: Ventas totales por región"
+      ],
+      "id": "1e3fdc3b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "regiones = [\"NA_Sales\", \"EU_Sales\", \"JP_Sales\", \"Other_Sales\"]\n",
+        "ventas_region = df[regiones].sum()\n",
+        "tabla_region = pd.DataFrame({\n",
+        "    \"Ventas (M)\": ventas_region,\n",
+        "    \"Participación (%)\": ventas_region / ventas_region.sum() * 100\n",
+        "})\n",
+        "tabla_region"
+      ],
+      "id": "9cefd1ff",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea C.4: Top 10 publishers por ventas globales"
+      ],
+      "id": "26621246"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "ventas_pub = (df.groupby(\"Publisher\")[\"Global_Sales\"]\n",
+        "                .sum()\n",
+        "                .sort_values(ascending=False))\n",
+        "top10_pub = ventas_pub.head(10)\n",
+        "top10_pub.to_frame(\"Ventas globales (M)\")"
+      ],
+      "id": "bc6dd3b8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea C.5: Visualizaciones\n",
+        "\n",
+        "### Ventas por género"
+      ],
+      "id": "2c307bfa"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 9,
+        "fig-height": 5
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "sns.barplot(x=ventas_genero.index, y=ventas_genero.values, ax=ax, color=\"#2a6f97\")\n",
+        "ax.set_title(\"Ventas globales por género\")\n",
+        "ax.set_xlabel(\"Género\")\n",
+        "ax.set_ylabel(\"Ventas globales (millones de unidades)\")\n",
+        "plt.xticks(rotation=45, ha=\"right\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "52905e00",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Tendencia anual de ventas"
+      ],
+      "id": "2a03c1a2"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 9,
+        "fig-height": 5
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "ax.plot(ventas_anio.index, ventas_anio.values, marker=\"o\", color=\"#c1121f\")\n",
+        "pico = ventas_anio.idxmax()\n",
+        "ax.axvline(pico, ls=\"--\", color=\"gray\", alpha=.6)\n",
+        "ax.annotate(f\"Pico: {pico}\", (pico, ventas_anio.max()),\n",
+        "            xytext=(pico - 12, ventas_anio.max() * 0.95),\n",
+        "            arrowprops=dict(arrowstyle=\"->\", color=\"gray\"))\n",
+        "ax.set_title(\"Tendencia anual de ventas globales\")\n",
+        "ax.set_xlabel(\"Año de lanzamiento\")\n",
+        "ax.set_ylabel(\"Ventas globales (millones de unidades)\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "4c2548a1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Participación por región"
+      ],
+      "id": "c43681b5"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 6,
+        "fig-height": 6
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "etiquetas = [\"Norteamérica\", \"Europa\", \"Japón\", \"Otras\"]\n",
+        "ax.pie(ventas_region.values, labels=etiquetas, autopct=\"%1.1f%%\",\n",
+        "       startangle=90, colors=sns.color_palette(\"deep\", 4),\n",
+        "       wedgeprops=dict(edgecolor=\"white\"))\n",
+        "ax.set_title(\"Participación de ventas por región\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "57075fef",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Top 10 publishers"
+      ],
+      "id": "b4b3644a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 9,
+        "fig-height": 5
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "sns.barplot(x=top10_pub.values, y=top10_pub.index, ax=ax, color=\"#386641\")\n",
+        "ax.set_title(\"Top 10 publishers por ventas globales\")\n",
+        "ax.set_xlabel(\"Ventas globales (millones de unidades)\")\n",
+        "ax.set_ylabel(\"\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "861ec3fb",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Tarea C.6: Interpretación\n",
+        "\n",
+        "**¿Cuál es el género más vendido? ¿Por qué cree que es así?** **Action** (1,723 millones de unidades).\n",
+        "Action es un género muy amplio: agrupa juegos de combate, aventura con acción y mundo abierto, por lo que cubre muchos gustos.\n",
+        "Además es el que más títulos tiene en el catálogo, lo que suma volumen.\n",
+        "\n",
+        "**¿En qué año se alcanzó el pico máximo de ventas? ¿Qué pudo haber influido?** En **2008** (679 millones de unidades).\n",
+        "Coincide con el auge de la séptima generación de consolas (Wii, Xbox 360, PS3) y de Nintendo DS, con la expansión del público casual gracias a Wii, y con un catálogo anual muy grande.\n",
+        "\n",
+        "**¿Qué región concentra la mayor parte de las ventas?** **Norteamérica**, con 49 % del total.\n",
+        "\n",
+        "**¿Qué publisher domina el mercado?** **Nintendo**, con 1,784 millones de unidades.\n",
+        "\n",
+        "# Parte D: Análisis diagnóstico\n",
+        "\n",
+        "## Tarea D.1: Distribución regional de ventas por género"
+      ],
+      "id": "816bd952"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Ventas por genero y region\n",
+        "genero_region = df.groupby(\"Genre\")[regiones].sum()\n",
+        "genero_region.columns = [\"Norteamérica\", \"Europa\", \"Japón\", \"Otras\"]\n",
+        "\n",
+        "# proporción de cada región que corresponde a cada genero\n",
+        "prop_region = genero_region.div(genero_region.sum(axis=0), axis=1) * 100\n",
+        "prop_region.sort_values(\"Japón\", ascending=False)"
+      ],
+      "id": "629bfc4d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 8,
+        "fig-height": 6
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "sns.heatmap(prop_region, annot=True, fmt=\".1f\", cmap=\"YlOrRd\",\n",
+        "            cbar_kws={\"label\": \"% de las ventas de la región\"}, ax=ax)\n",
+        "ax.set_title(\"Proporción de ventas por género dentro de cada región (%)\")\n",
+        "ax.set_ylabel(\"\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "aab53863",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Pregunta D.1: ¿Qué género tiene una proporción inusualmente alta en Japón? ¿Qué explica este fenómeno desde una perspectiva cultural y de mercado?**\n",
+        "\n",
+        "**Role-Playing (RPG)** representa **27 %** de las ventas en Japón.\n",
+        "\n",
+        "- **Cultural:** el RPG japonés (Dragon Quest, Final Fantasy, Pokémon) está muy ligado a la narrativa, el manga y el anime, y a una tradición de juegos largos y centrados en personajes.\n",
+        "\n",
+        "- **Mercado:** gran parte del consumo en Japón es en consolas portátiles (DS, PSP, 3DS), ideales para sesiones largas de RPG en trayectos de transporte público.\n",
+        "\n",
+        "## Tarea D.2: Ciclo de vida de las principales plataformas"
+      ],
+      "id": "65a819cd"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "top6 = (df.groupby(\"Platform\")[\"Global_Sales\"].sum()\n",
+        "          .sort_values(ascending=False).head(6))\n",
+        "print(\"Top 6 plataformas por ventas globales:\")\n",
+        "print(top6.to_frame(\"Ventas globales (M)\"))\n",
+        "\n",
+        "plat_anio = (df[df[\"Platform\"].isin(top6.index)]\n",
+        "               .pivot_table(index=\"Year\", columns=\"Platform\",\n",
+        "                            values=\"Global_Sales\", aggfunc=\"sum\")\n",
+        "               .fillna(0))"
+      ],
+      "id": "6d19e5a0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 10,
+        "fig-height": 5.5
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "for plat in top6.index:\n",
+        "    ax.plot(plat_anio.index, plat_anio[plat], label=plat, linewidth=2)\n",
+        "ax.set_title(\"Evolución anual de ventas de las 6 plataformas principales\")\n",
+        "ax.set_xlabel(\"Año de lanzamiento del juego\")\n",
+        "ax.set_ylabel(\"Ventas globales (millones de unidades)\")\n",
+        "ax.legend(title=\"Plataforma\")\n",
+        "ax.set_xlim(1993, 2017)\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "a019ea77",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Pregunta D.2: ¿Qué patrones observas en el ciclo de vida de las plataformas? ¿Cómo se relaciona esto con la estrategia de las empresas desarrolladoras?**\n",
+        "\n",
+        "- **Forma de campana:** cada plataforma sube tras el lanzamiento, alcanza un pico entre 3 y 5 años después y declina.\n",
+        "- **Relevo generacional:** la caída de una plataforma coincide con el ascenso de su sucesora, con una superposición de 1 a 3 años.\n",
+        "- **Ciclo de 10 años:** PS2 es la más longeva de las seis (2000–2011), porque tuvo una base instalada enorme y bajo costo de desarrollo.\n",
+        "- **Implicación estratégica:** los publishers deben decidir cuándo entrar a una plataforma. Lanzar al inicio ofrece menos competencia pero una base instalada pequeña; lanzar en el pico ofrece más compradores pero también más competencia.\n",
+        "\n",
+        "## Tarea D.3: Concentración del mercado por publisher"
+      ],
+      "id": "a38312e7"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "cuota = ventas_pub / ventas_pub.sum() * 100\n",
+        "cuota_acum = cuota.cumsum()\n",
+        "\n",
+        "concentracion = pd.Series({\n",
+        "    \"Top 5\":  cuota.head(5).sum(),\n",
+        "    \"Top 10\": cuota.head(10).sum(),\n",
+        "    \"Top 20\": cuota.head(20).sum(),\n",
+        "})\n",
+        "print(f\"Número total de publishers: {len(ventas_pub)}\")\n",
+        "concentracion.to_frame(\"% de ventas globales\")"
+      ],
+      "id": "ff667b51",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "hhi = (cuota ** 2).sum()\n",
+        "print(f\"HHI = {hhi:,.0f}  (<1,500 poco concentrado; 1,500-2,500 moderado; >2,500 alto)\")"
+      ],
+      "id": "0d5df8a6",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 9,
+        "fig-height": 5
+      },
+      "source": [
+        "fig, ax = plt.subplots()\n",
+        "ax.plot(range(1, 101), cuota_acum.head(100).values, color=\"#6a040f\", linewidth=2)\n",
+        "for n in (5, 10, 20):\n",
+        "    ax.axvline(n, ls=\"--\", color=\"gray\", alpha=.5)\n",
+        "    ax.annotate(f\"Top {n}: {cuota_acum.iloc[n-1]:.0f}%\", (n, cuota_acum.iloc[n-1]),\n",
+        "                xytext=(n + 2, cuota_acum.iloc[n-1] - 8))\n",
+        "ax.set_title(\"Cuota de mercado acumulada por publisher (primeros 100)\")\n",
+        "ax.set_xlabel(\"Número de publishers (ordenados por ventas)\")\n",
+        "ax.set_ylabel(\"% acumulado de ventas globales\")\n",
+        "ax.set_ylim(0, 105)\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "6cc4c3ba",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Pregunta D.3: ¿El mercado está concentrado o fragmentado? ¿Qué implicaciones tiene para un nuevo publisher?**\n",
+        "\n",
+        "El mercado es de cola larga con un núcleo muy concentrado: hay 576 publishers, pero solo 5 acumulan 53 % de las ventas, 10 acumulan 71 % y 20 acumulan 86 %.\n",
+        "\n",
+        "Implicaciones para un nuevo publisher:\n",
+        "\n",
+        "- Competir de frente con los grandes en superproducciones es muy difícil por escala, marketing y acceso a plataformas.\n",
+        "- Las oportunidades están en títulos de menor presupuesto.\n",
+        "- Una alternativa es asociarse o ser adquirido, o trabajar con los grandes como distribuidor o desarrollador.\n",
+        "- Al existir muchos publishers pequeños que sobreviven, la entrada no está bloqueada, pero lograr un éxito masivo es la excepción.\n",
+        "\n",
+        "## Tarea D.4: Pregunta diagnóstica propia\n",
+        "\n",
+        "**Pregunta:** *¿El hecho de que las ventas del género Action cayeron después de 2010 es una decadencia propia del género, o refleja una caída del mercado en general?*\n",
+        "\n",
+        "**Analisis:** se compara el comportamiento absoluto de Action con su participación dentro del total y con el numero de titulos registrados por año."
+      ],
+      "id": "1d8cf55c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "anual = df.groupby(\"Year\").agg(total=(\"Global_Sales\", \"sum\"),\n",
+        "                               titulos=(\"Name\", \"count\"))\n",
+        "action = df[df[\"Genre\"] == \"Action\"].groupby(\"Year\")[\"Global_Sales\"].sum()\n",
+        "anual[\"action\"] = action\n",
+        "anual[\"action\"] = anual[\"action\"].fillna(0)\n",
+        "anual[\"share_action\"] = anual[\"action\"] / anual[\"total\"] * 100\n",
+        "anual[\"venta_por_titulo\"] = anual[\"total\"] / anual[\"titulos\"]\n",
+        "\n",
+        "rango = anual.loc[2005:2016]\n",
+        "rango[[\"total\", \"action\", \"share_action\", \"titulos\", \"venta_por_titulo\"]]"
+      ],
+      "id": "daebc0e7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "fig-width": 11,
+        "fig-height": 4.5
+      },
+      "source": [
+        "fig, axes = plt.subplots(1, 3, figsize=(14, 4.2))\n",
+        "\n",
+        "axes[0].plot(rango.index, rango[\"total\"], label=\"Mercado total\", color=\"gray\")\n",
+        "axes[0].plot(rango.index, rango[\"action\"], label=\"Action\", color=\"#c1121f\")\n",
+        "axes[0].set_title(\"Ventas absolutas (M)\")\n",
+        "axes[0].legend()\n",
+        "\n",
+        "axes[1].plot(rango.index, rango[\"share_action\"], color=\"#c1121f\", marker=\"o\")\n",
+        "axes[1].set_title(\"Participación de Action en el total (%)\")\n",
+        "\n",
+        "axes[2].bar(rango.index, rango[\"titulos\"], color=\"#2a6f97\")\n",
+        "axes[2].set_title(\"Títulos registrados por año\")\n",
+        "\n",
+        "for a in axes:\n",
+        "    a.set_xlabel(\"Año\")\n",
+        "plt.tight_layout()\n",
+        "plt.show()"
+      ],
+      "id": "25dc1643",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Conclusiones:**\n",
+        "\n",
+        "1.  **La premisa es parcialmente fals.** Las ventas absolutas de Action sí bajaron después de 2009 , pero su participación en el mercado subió: pasó de 20 % hacia 2010 a 34 % en 2012–2013.\n",
+        "2.  **La caída es del mercado completo.** El total pasó de 679 millones (2008) a 364 millones (2012), y los títulos registrados por año cayeron de 1,430 a 660 entre 2009 y 2012.\n",
+        "3.  **Hipotesis:** en un mercado que se contrae, los grandes presupuestos (a menudo Action) resisten mejor que los juegos casuales o de nicho, lo que eleva su peso relativo.\n",
+        "\n",
+        "# Parte E: Interpretación administrativa\n",
+        "\n",
+        "## Tarea E.1: Informe ejecutivo\n",
+        "\n",
+        "### Resumen ejecutivo\n",
+        "\n",
+        "Tras analizar más de 16,000 títulos, los tres hallazgos más importantes son:\n",
+        "\n",
+        "1.  **El mercado esta concentrado en pocos generos, regiones y empresas:** Action, Sports y Shooter suman cerca de la mitad de las ventas; Norteamérica y Europa, el 76 %; y cinco publishers, el 53 %.\n",
+        "2.  **Cada región tiene preferencias distintas:** En Japón el genero Role-Playing pesa más de tres veces que en Occidente, mientras que los Shooter casi no despegan.\n",
+        "3.  **Los ciclos de las plataformas son cortos y predecibles:** Cada consola alcanza su pico a los 3–5 años y se agota alrededor de los 10, lo que obliga a planificar con anticipación las transiciones generacionales.\n",
+        "\n",
+        "### Análisis descriptivo\n",
+        "\n",
+        "Las ventas totales del periodo analizado superan los 8,800 millones de unidades.\n",
+        "El género más vendido es Action (1,723 millones), seguido de Sports (1,309) y Shooter (1,026).\n",
+        "Por región, Norteamérica concentra el 49 % de las ventas, Europa el 27 %, Japón el 15 % y el resto del mundo el 9 %.\n",
+        "El año de mayor venta fue 2008 (679 millones), tras un crecimiento sostenido desde finales de los noventa y una caída progresiva a partir de 2010.\n",
+        "Nintendo es el publisher líder (1,784 millones), seguido de Electronic Arts y Activision.\n",
+        "\n",
+        "### Análisis diagnóstico\n",
+        "\n",
+        "El predominio de Action se debe a la amplitud del género, que atrae a públicos muy variados, y a que es el que más títulos produce.\n",
+        "El peso del RPG en Japón responde a una tradición cultural ligada al manga y a las narrativas largas, y al predominio de consolas portátiles.\n",
+        "La concentración en pocos publishers refleja las economías de escala: quien controla franquicias consolidadas, acceso a plataformas y presupuesto de marketing, captura la mayor parte de la demanda.\n",
+        "Por último, la caída de ventas posterior a 2009 no se debe a que un género dejara de gustar: Action, de hecho, aumentó su participación (de 20 % a 34 %).\n",
+        "Se debe al cierre del ciclo de la séptima generación de consolas, a la contracción del público casual y al desplazamiento hacia lo digital y movil.\n",
+        "\n",
+        "### Recomendaciones\n",
+        "\n",
+        "1.  **Adaptar el portafolio por región.**\n",
+        "2.  **Diversificar por plataforma y planificar la transición con 2–3 años de anticipación.**\n",
+        "3.  **Apostar por nichos y franquicias propias en lugar de competir de frente con los cinco grandes.**\n",
+        "\n",
+        "### Limitaciones\n",
+        "\n",
+        "- El dataset termina en 2016 y no refleja el auge de las ventas digitales, los juegos móviles, los gratuitos ni los servicios de suscripción.\n",
+        "- Mide unidades vendidas, no ingresos ni rentabilidad: no incluye precios, costos de desarrollo ni marketing.\n",
+        "- Existen errores puntuales de captura y 36 juegos sin publisher conocido.\n",
+        "- No contiene información del jugador\n",
+        "\n",
+        "## Tarea E.2: Preguntas finales\n",
+        "\n",
+        "**¿Como se relaciona este analisis con la toma de decisiones en una empresa real?** Permite decidir en qué géneros y plataformas invertir, qué mercados priorizar, cuándo lanzar un título y cómo posicionarse frente a la competencia.\n",
+        "Pasa de lo descriptivo a lo diagnóstico , que es la base para decisiones prescriptivas y de planificación.\n",
+        "\n",
+        "**¿Qué otras fuentes de datos utilizaría para enriquecer el análisis?**\n",
+        "\n",
+        "- Ingresos, precios por título\n",
+        "- Costos de los titulos\n",
+        "- Ventas digitales, móviles y suscripciones\n",
+        "- Calificaciones de críticos y usuarios\n",
+        "- Datos de comportamiento del jugador.\n",
+        "- Redes sociales, tendencias de búsqueda y datos de streaming\n",
+        "- Datos económicos por región.\n",
+        "\n",
+        "**¿Qué riesgos éticos podría identificar en el uso de estos datos?**\n",
+        "\n",
+        "- El dataset omite mercados emergentes y ventas digitales, por lo que decidir solo con él puede excluir públicos enteros.\n",
+        "- explicar los gustos de una región con estereotipos puede llevar a decisiones discriminatorias o simplistas.\n",
+        "- Al enriquecer el análisis con datos de jugadores, existe el riesgo de usar información personal\n",
+        "- Usar los datos para optimizar mecánicas que fomenten el gasto compulsivo\n",
+        "- Decisiones que refuerzan el dominio de unos pocos actores pueden perjudicar a estudios pequeños y a la diversidad de la oferta."
+      ],
+      "id": "55ff87ad"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "D:\\Desktop\\tarea\\Ciencia de Datos\\ciencia_datos_clases\\AnalisisVideojuegos\\venv\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
